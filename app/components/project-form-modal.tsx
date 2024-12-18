@@ -5,8 +5,7 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2 } from 'lucide-react'
-import { toast } from 'react-hot-toast'
+import toast, { Toaster } from 'react-hot-toast';
 
 type AirdropStatus = 'Not Airdropped' | 'Airdropped' | 'Scheduled';
 
@@ -26,12 +25,11 @@ type Project = {
 
 type ProjectFormModalProps = {
   project?: Project | null
+  onSubmit: (project: Omit<Project, 'id' | 'createdAt'>) => void
   onClose: () => void
-  onSuccess: () => void
 }
 
-export default function ProjectFormModal({ project, onClose, onSuccess }: ProjectFormModalProps) {
-  const [isLoading, setIsLoading] = useState(false)
+export default function ProjectFormModal({ project, onSubmit, onClose }: ProjectFormModalProps) {
   const [formData, setFormData] = useState({
     name: '',
     discordLink: '',
@@ -59,42 +57,13 @@ export default function ProjectFormModal({ project, onClose, onSuccess }: Projec
       })
     }
   }, [project])
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
-
-    try {
-      const endpoint = project 
-        ? `/api/projects/${project.id}` 
-        : '/api/projects'
-      
-      const method = project ? 'PUT' : 'POST'
-
-      const response = await fetch(endpoint, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...formData,
-          airdropDate: formData.airdropDate || null
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to save project')
-      }
-
-      toast.success(project ? 'Project updated successfully' : 'Project created successfully')
-      onSuccess()
-      onClose()
-    } catch (error) {
-      console.error('Error saving project:', error)
-      toast.error('Failed to save project. Please try again.')
-    } finally {
-      setIsLoading(false)
-    }
+    onSubmit({
+      ...formData,
+      airdropDate: formData.airdropDate || null
+    })
+    toast('Project updated')
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -117,7 +86,6 @@ export default function ProjectFormModal({ project, onClose, onSuccess }: Projec
               value={formData.name}
               onChange={handleChange}
               required
-              disabled={isLoading}
             />
           </div>
           <div>
@@ -127,7 +95,6 @@ export default function ProjectFormModal({ project, onClose, onSuccess }: Projec
               name="discordLink"
               value={formData.discordLink}
               onChange={handleChange}
-              disabled={isLoading}
             />
           </div>
           <div>
@@ -137,7 +104,6 @@ export default function ProjectFormModal({ project, onClose, onSuccess }: Projec
               name="xLink"
               value={formData.xLink}
               onChange={handleChange}
-              disabled={isLoading}
             />
           </div>
           <div>
@@ -147,7 +113,6 @@ export default function ProjectFormModal({ project, onClose, onSuccess }: Projec
               name="website"
               value={formData.website}
               onChange={handleChange}
-              disabled={isLoading}
             />
           </div>
           <div>
@@ -157,7 +122,6 @@ export default function ProjectFormModal({ project, onClose, onSuccess }: Projec
               name="wallet"
               value={formData.wallet}
               onChange={handleChange}
-              disabled={isLoading}
             />
           </div>
           <div>
@@ -168,7 +132,6 @@ export default function ProjectFormModal({ project, onClose, onSuccess }: Projec
               type="email"
               value={formData.email}
               onChange={handleChange}
-              disabled={isLoading}
             />
           </div>
           <div>
@@ -176,7 +139,6 @@ export default function ProjectFormModal({ project, onClose, onSuccess }: Projec
             <Select
               value={formData.airdropStatus}
               onValueChange={(value: AirdropStatus) => setFormData(prev => ({ ...prev, airdropStatus: value }))}
-              disabled={isLoading}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select airdrop status" />
@@ -197,7 +159,6 @@ export default function ProjectFormModal({ project, onClose, onSuccess }: Projec
                 type="date"
                 value={formData.airdropDate}
                 onChange={handleChange}
-                disabled={isLoading}
               />
             </div>
           )}
@@ -209,24 +170,15 @@ export default function ProjectFormModal({ project, onClose, onSuccess }: Projec
               onCheckedChange={(checked) => 
                 setFormData(prev => ({ ...prev, completed: checked === true }))
               }
-              disabled={isLoading}
             />
             <Label htmlFor="completed">Completed</Label>
           </div>
           <DialogFooter>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {project ? 'Updating...' : 'Creating...'}
-                </>
-              ) : (
-                <>{project ? 'Update' : 'Add'} Project</>
-              )}
-            </Button>
+            <Button type="submit">{project ? 'Update' : 'Add'} Project</Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
   )
 }
+
